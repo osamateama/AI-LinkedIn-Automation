@@ -1,0 +1,229 @@
+{
+  "name": "Linkedin Automation",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Generate materials for my next LinkedIn post.\n\nHere are the ideas that we've already used: {{ $json.mergedText }}.\n\nCome up with a new, super valuable and concrete post, and prepare all the needed materials for it:\n- idea\n- title\n- text\n- image description\n\nUse the least used bucket of content (out of my 4 buckets).\n\nBegin:",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "=ROLE: You're an expert .NET and Back-End Engineer with 10 years of experience. You've built scalable, high-performance web applications, APIs, and services used by thousands of companies worldwide.\n\nOBJECTIVE: Your goal is to write a 1) name, 2) idea, 3) title, 4) text, and 5) image description for my next technical post. They should be super valuable to my audience of developers, software engineers, and tech leads.\n\nSCENARIO: I run a blog about software engineering and back-end development. My audience is developers, software engineers, tech leads, and CTOs. My goal is to help them improve their .NET and back-end skills with valuable and practical technical insights. \nI have 4 main buckets of content on my page:\n1) Best Practices\n2) Case Studies\n3) Performance Hacks\n4) Controversial Practices\n\nEXPECTATION: Write me JSON with name, idea, title, text, image.\n\nNOTES:\n- THE BACKGROUND OF THE IMAGE SHOULD ALWAYS BE BLACK AND DARK GRAINY FILM\n- Make sure the JSON structure is valid and can be parsed directly\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [704, 0],
+      "id": "fe2c69d1-4eed-4f31-90cc-cd08b0f56d45",
+      "name": "Idea Generator",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"name\": \"name\",\n    \"idea\": \"idea\",\n    \"title\": \"title\",\n    \"text\": \"text\",\n    \"image\": \"image\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [960, 240],
+      "id": "15430b20-330a-4b1b-9bcc-7efd09a651b0",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "triggerAtHour": 5 }]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-96, 96],
+      "id": "f490c592-88b2-4473-b078-28ec875c48a2",
+      "name": "Schedule"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get all incoming items\nconst items = $input.all();\nconst texts = items.map(item => item.json.idea);\nconst concatenated = texts.join(\", \");\nreturn [{ json: { mergedText: concatenated } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [368, 96],
+      "id": "9af2785a-9f81-418b-b383-1373c67c7149",
+      "name": "Join Ideas"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [320, 672],
+      "id": "4f866963-03bb-4f02-8999-8549dc427d6c",
+      "name": "Pick One"
+    },
+    {
+      "parameters": {
+        "documentId": { "value": "1GmRbF1H8kROKspjj63lqEf1ELozRs32Fhzg79AjxcQI" },
+        "sheetName": { "value": "gid=0" },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [160, -64],
+      "id": "f3a19b5e-9dc2-421e-bab2-c70a1fa79f24",
+      "name": "Get Past Ideas"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": { "value": "1GmRbF1H8kROKspjj63lqEf1ELozRs32Fhzg79AjxcQI" },
+        "sheetName": { "value": "gid=0" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "name": "={{ $('Idea Generator').item.json.output.name }}",
+            "idea": "={{ $('Idea Generator').item.json.output.idea }}",
+            "text": "={{ $('Idea Generator').item.json.output.text }}",
+            "status": "review"
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1184, 16],
+      "id": "c4a6f8e8-3f5b-4c79-b36b-1abc27b3069e",
+      "name": "Save Post"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [{ "triggerAtHour": 16 }]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [-112, 656],
+      "id": "eec93744-3199-41c6-b0d6-9126e262e080",
+      "name": "Schedule 2"
+    },
+    {
+      "parameters": {
+        "documentId": { "value": "1GmRbF1H8kROKspjj63lqEf1ELozRs32Fhzg79AjxcQI" },
+        "sheetName": { "value": "gid=0" },
+        "filtersUI": {
+          "values": [{ "lookupColumn": "status", "lookupValue": "ready" }]
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [128, 416],
+      "id": "641d2685-f80d-40ec-b249-4ee30ad2bd3a",
+      "name": "Get Ready Posts"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": { "value": "={{ $json.image }}" }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [480, 448],
+      "id": "98bab696-8576-4aa8-b15c-65ee2b248e10",
+      "name": "Download Image"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "value": "1GmRbF1H8kROKspjj63lqEf1ELozRs32Fhzg79AjxcQI" },
+        "sheetName": { "value": "Posts" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $('Get Ready Posts').item.json.row_number }}",
+            "status": "posted"
+          },
+          "matchingColumns": ["row_number"]
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1408, 528],
+      "id": "7e82aecc-523d-4dfd-b5df-22d35cfa577c",
+      "name": "Update Status"
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [624, 208],
+      "id": "125ddcb7-9026-4363-8b0c-cfdab85d847a",
+      "name": "Google Gemini Chat Model"
+    },
+    {
+      "parameters": {
+        "name": "web_search",
+        "description": "Call this tool to make a web search query using Gemini Research.",
+        "workflowId": { "value": "YpFtxWweuR6durLv" },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.1,
+      "position": [800, 240],
+      "id": "e13f5dbd-a3bf-4e12-a57a-5bf8ae63d76a",
+      "name": "Gemini Research"
+    },
+    {
+      "parameters": {
+        "person": "wIbN0J0-jT",
+        "text": "={{ $json.text }}",
+        "shareMediaCategory": "IMAGE",
+        "additionalFields": {
+          "title": "={{ $json.name }}"
+        }
+      },
+      "type": "n8n-nodes-base.linkedIn",
+      "typeVersion": 1,
+      "position": [1056, 688],
+      "id": "4e48b326-d0c0-42b4-b1c8-0328df3976e0",
+      "name": "Publish Post"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.directLink }}",
+        "options": {
+          "response": { "response": { "responseFormat": "file" } }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [864, 464],
+      "id": "f0e2e540-ce19-4b8d-9585-908d9efd38cd",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Convert Google Drive link to direct download\nconst rows = $input.all();\nreturn rows.map(row => {\n  const originalLink = row.json.image;\n  const fileIdMatch = originalLink.match(/\\/d\\/([a-zA-Z0-9_-]+)/);\n  const fileId = fileIdMatch ? fileIdMatch[1] : null;\n  const directLink = fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : null;\n  return {\n    json: {\n      row_number: row.json.row_number,\n      name: row.json.name,\n      idea: row.json.idea,\n      text: row.json.text,\n      directLink: directLink,\n      status: row.json.status\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [656, 672],
+      "id": "13412982-e2f3-4e29-9cd6-9b39548e045e",
+      "name": "Code in JavaScript"
+    }
+  ],
+  "connections": {
+    "Idea Generator": { "main": [[{ "node": "Save Post", "type": "main", "index": 0 }]] },
+    "Structured Output Parser": { "ai_outputParser": [[{ "node": "Idea Generator", "type": "ai_outputParser", "index": 0 }]] },
+    "Schedule": { "main": [[{ "node": "Get Past Ideas", "type": "main", "index": 0 }]] },
+    "Join Ideas": { "main": [[{ "node": "Idea Generator", "type": "main", "index": 0 }]] },
+    "Pick One": { "main": [[{ "node": "Download Image", "type": "main", "index": 0 }]] },
+    "Get Past Ideas": { "main": [[{ "node": "Join Ideas", "type": "main", "index": 0 }]] },
+    "Schedule 2": { "main": [[{ "node": "Get Ready Posts", "type": "main", "index": 0 }]] },
+    "Get Ready Posts": { "main": [[{ "node": "Pick One", "type": "main", "index": 0 }]] },
+    "Download Image": { "main": [[{ "node": "Code in JavaScript", "type": "main", "index": 0 }]] },
+    "Google Gemini Chat Model": { "ai_languageModel": [[{ "node": "Idea Generator", "type": "ai_languageModel", "index": 0 }]] },
+    "Gemini Research": { "ai_tool": [[{ "node": "Idea Generator", "type": "ai_tool", "index": 0 }]] },
+    "HTTP Request": { "main": [[{ "node": "Publish Post", "type": "main", "index": 0 }]] },
+    "Code in JavaScript": { "main": [[{ "node": "HTTP Request", "type": "main", "index": 0 }]] },
+    "Publish Post": { "main": [[{ "node": "Update Status", "type": "main", "index": 0 }]] }
+  }
+}

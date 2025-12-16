@@ -1,0 +1,57 @@
+{
+  "name": "Gemini Research",
+  "nodes": [
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [{ "name": "query" }]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [80, 112],
+      "id": "79b17cc9-f479-4bf9-98a7-4378aec52478",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"contents\": [\n    {\n      \"role\": \"user\",\n      \"parts\": [\n        {\n          \"text\": \"You're a professional content researcher.\\n\\n{{ $json.query.replace(/\\\"/g, '') }}\"\n        }\n      ]\n    }\n  ],\n  \"generationConfig\": {\n    \"temperature\": 0.7,\n    \"topP\": 1,\n    \"topK\": 40,\n    \"maxOutputTokens\": 2048\n  }\n}"
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [288, 112],
+      "id": "564915b9-790e-4a1d-93dc-8cf8c358eaaa",
+      "name": "Gemini Research"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "464443a2-d5aa-4aa3-bd06-60372337a0e2",
+              "value": "={{ $json.candidates[0].content.parts[0].text }}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [480, 112],
+      "id": "43741c2a-5c99-4d83-8c98-7971751234b9",
+      "name": "Output"
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [[{ "node": "Gemini Research", "type": "main", "index": 0 }]]
+    },
+    "Gemini Research": {
+      "main": [[{ "node": "Output", "type": "main", "index": 0 }]]
+    }
+  }
+}
